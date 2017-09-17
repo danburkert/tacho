@@ -44,7 +44,7 @@ fn write_buckets<N, W>(
     out: &mut W,
     name: &N,
     labels: &FmtLabels,
-    h: &Histogram<usize>,
+    h: &Histogram<u64>,
 ) -> fmt::Result
 where
     N: fmt::Display,
@@ -80,7 +80,7 @@ fn write_bucket<N, M, W>(
     name: &N,
     labels: &FmtLabels,
     le: &M,
-    count: usize,
+    count: u64,
 ) -> fmt::Result
 where
     N: fmt::Display,

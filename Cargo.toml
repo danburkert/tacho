@@ -10,7 +10,7 @@ readme = "README.md"
 
 [dependencies]
 futures = "0.1"
-hdrsample = "3.0"
+hdrsample = { version = "4.0", default-features = false }
 log = "0.3"
 ordermap = "0.2.10"
 

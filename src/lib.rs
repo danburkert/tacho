@@ -260,7 +260,7 @@ impl Gauge {
 }
 
 /// Histograms hold up to 4 significant figures.
-const HISTOGRAM_PRECISION: u32 = 4;
+const HISTOGRAM_PRECISION: u8 = 4;
 
 /// Tracks a distribution of values with their sum.
 ///
@@ -268,7 +268,7 @@ const HISTOGRAM_PRECISION: u32 = 4;
 /// for histograms.
 #[derive(Clone)]
 pub struct HistogramWithSum {
-    histogram: Histogram<usize>,
+    histogram: Histogram<u64>,
     sum: u64,
 }
 
@@ -276,8 +276,8 @@ impl HistogramWithSum {
     /// Constructs a new `HistogramWithSum`, possibly with bounds.
     fn new(bounds: Option<(u64, u64)>) -> Self {
         let h = match bounds {
-            None => Histogram::<usize>::new(HISTOGRAM_PRECISION),
-            Some((l, h)) => Histogram::<usize>::new_with_bounds(l, h, HISTOGRAM_PRECISION),
+            None => Histogram::<u64>::new(HISTOGRAM_PRECISION),
+            Some((l, h)) => Histogram::<u64>::new_with_bounds(l, h, HISTOGRAM_PRECISION),
         };
         let histogram = h.expect("failed to create histogram");
         HistogramWithSum { histogram, sum: 0 }
@@ -295,7 +295,7 @@ impl HistogramWithSum {
         }
     }
 
-    pub fn histogram(&self) -> &Histogram<usize> {
+    pub fn histogram(&self) -> &Histogram<u64> {
         &self.histogram
     }
     pub fn count(&self) -> u64 {

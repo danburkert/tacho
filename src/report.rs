@@ -8,14 +8,16 @@ type ReportCounterMap = OrderMap<Key, usize>;
 type ReportGaugeMap = OrderMap<Key, usize>;
 type ReportStatMap = OrderMap<Key, HistogramWithSum>;
 
-pub fn new(registry: Arc<Mutex<Registry>>) -> Reporter {
-    Reporter(registry)
-}
-
 #[derive(Clone)]
 pub struct Reporter(Arc<Mutex<Registry>>);
 
 impl Reporter {
+
+    /// Creates a new reporter for a registry.
+    pub(crate) fn new(registry: Arc<Mutex<Registry>>) -> Reporter {
+        Reporter(registry)
+    }
+
     /// Obtains a read-only view of a metrics report without clearing the underlying state.
     pub fn peek(&self) -> Report {
         let registry = self.0.lock();

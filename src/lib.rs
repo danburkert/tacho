@@ -71,7 +71,7 @@ pub fn new() -> (Scope, Reporter) {
         registry: registry.clone(),
     };
 
-    (scope, report::new(registry))
+    (scope, Reporter::new(registry))
 }
 
 /// Describes a metric.
@@ -102,7 +102,7 @@ impl Key {
 }
 
 #[derive(Default)]
-pub struct Registry {
+struct Registry {
     counters: CounterMap,
     gauges: GaugeMap,
     stats: StatMap,

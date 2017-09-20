@@ -1,4 +1,4 @@
-//! A thread-safe, `Future`-aware metrics library.
+//! A thread-safe metrics library.
 //!
 //! Many programs need to information about runtime performance: the number of requests
 //! served, a distribution of request latency, the number of failures, the number of loop
@@ -15,7 +15,6 @@
 
 #![cfg_attr(test, feature(test))]
 
-extern crate futures;
 extern crate hdrsample;
 #[macro_use]
 extern crate log;
@@ -24,7 +23,6 @@ extern crate parking_lot;
 #[cfg(test)]
 extern crate test;
 
-use futures::{Future, Poll};
 use hdrsample::Histogram;
 use ordermap::OrderMap;
 use parking_lot::Mutex;
@@ -36,10 +34,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 mod report;
-mod timing;
 
 pub use report::{Reporter, Report};
-pub use timing::Timing;
 
 type Labels = BTreeMap<&'static str, String>;
 type CounterMap = OrderMap<Key, Arc<AtomicUsize>>;
@@ -180,20 +176,6 @@ impl Scope {
         self.mk_stat(key, None)
     }
 
-    pub fn timer_us(&self, name: &'static str) -> Timer {
-        Timer {
-            stat: self.stat(name),
-            unit: TimeUnit::Micros,
-        }
-    }
-
-    pub fn timer_ms(&self, name: &'static str) -> Timer {
-        Timer {
-            stat: self.stat(name),
-            unit: TimeUnit::Millis,
-        }
-    }
-
     /// Creates a Stat with the given name and histogram paramters.
     pub fn stat_with_bounds(&self, name: &'static str, low: u64, high: u64) -> Stat {
         let key = Key::new(name, self.prefix.clone(), self.labels.clone());
@@ -313,56 +295,6 @@ impl Stat {
         for v in vs {
             histo.record(*v)
         }
-    }
-}
-
-#[derive(Clone)]
-pub struct Timer {
-    stat: Stat,
-    unit: TimeUnit,
-}
-#[derive(Copy, Clone)]
-pub enum TimeUnit {
-    Millis,
-    Micros,
-}
-impl Timer {
-    pub fn record_since(&self, t0: Instant) {
-        self.stat.add(to_u64(t0, self.unit));
-    }
-
-    pub fn time<F>(&self, fut: F) -> Timed<F>
-    where
-        F: Future + 'static,
-    {
-        let stat = self.stat.clone();
-        let unit = self.unit;
-        let f = futures::lazy(move || {
-            // Start timing once the future is actually being invoked (and not
-            // when the object is created).
-            let t0 = Timing::start();
-            fut.then(move |v| {
-                stat.add(to_u64(t0, unit));
-                v
-            })
-        });
-        Timed(Box::new(f))
-    }
-}
-
-fn to_u64(t0: Instant, unit: TimeUnit) -> u64 {
-    match unit {
-        TimeUnit::Millis => t0.elapsed_ms(),
-        TimeUnit::Micros => t0.elapsed_us(),
-    }
-}
-
-pub struct Timed<F: Future>(Box<Future<Item = F::Item, Error = F::Error>>);
-impl<F: Future> Future for Timed<F> {
-    type Item = F::Item;
-    type Error = F::Error;
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        self.0.poll()
     }
 }
 

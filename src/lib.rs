@@ -65,6 +65,7 @@ pub struct Key {
     prefix: Vec<&'static str>,
     labels: Labels,
 }
+
 impl Key {
     fn new(name: &'static str, prefix: Vec<&'static str>, labels: Labels) -> Key {
         Key {
@@ -177,6 +178,15 @@ impl Scope {
         let histo = Arc::new(Mutex::new(HistogramWithSum::new(bounds)));
         reg.stats.insert(key, histo.clone());
         Stat { histo, bounds }
+    }
+}
+
+impl fmt::Debug for Scope {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Scope")
+            .field("prefix", &self.prefix)
+            .field("labels", &self.labels)
+            .finish()
     }
 }
 

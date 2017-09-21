@@ -26,12 +26,10 @@ extern crate test;
 use hdrsample::Histogram;
 use ordermap::OrderMap;
 use parking_lot::Mutex;
-use std::boxed::Box;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Instant;
 
 mod report;
 
@@ -41,15 +39,6 @@ type Labels = BTreeMap<&'static str, String>;
 type CounterMap = OrderMap<Key, Arc<AtomicUsize>>;
 type GaugeMap = OrderMap<Key, Arc<AtomicUsize>>;
 type StatMap = OrderMap<Key, Arc<Mutex<HistogramWithSum>>>;
-
-#[derive(Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
-pub enum Prefix {
-    Root,
-    Node {
-        prefix: Arc<Prefix>,
-        value: &'static str,
-    },
-}
 
 /// Creates a metrics registry.
 ///
@@ -61,8 +50,8 @@ pub fn new() -> (Scope, Reporter) {
     let registry = Arc::new(Mutex::new(Registry::default()));
 
     let scope = Scope {
-        labels: Labels::default(),
-        prefix: Arc::new(Prefix::Root),
+        prefix: Vec::new(),
+        labels: Labels::new(),
         registry: registry.clone(),
     };
 
@@ -73,11 +62,11 @@ pub fn new() -> (Scope, Reporter) {
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Key {
     name: &'static str,
-    prefix: Arc<Prefix>,
+    prefix: Vec<&'static str>,
     labels: Labels,
 }
 impl Key {
-    fn new(name: &'static str, prefix: Arc<Prefix>, labels: Labels) -> Key {
+    fn new(name: &'static str, prefix: Vec<&'static str>, labels: Labels) -> Key {
         Key {
             name,
             prefix,
@@ -88,7 +77,7 @@ impl Key {
     pub fn name(&self) -> &'static str {
         self.name
     }
-    pub fn prefix(&self) -> &Arc<Prefix> {
+    pub fn prefix(&self) -> &[&'static str] {
         &self.prefix
     }
     pub fn labels(&self) -> &Labels {
@@ -111,8 +100,8 @@ struct Registry {
 /// labeled.
 #[derive(Clone)]
 pub struct Scope {
+    prefix: Vec<&'static str>,
     labels: Labels,
-    prefix: Arc<Prefix>,
     registry: Arc<Mutex<Registry>>,
 }
 
@@ -130,11 +119,7 @@ impl Scope {
 
     /// Appends a prefix to the current scope.
     pub fn prefixed(mut self, value: &'static str) -> Self {
-        let p = Prefix::Node {
-            prefix: self.prefix,
-            value,
-        };
-        self.prefix = Arc::new(p);
+        self.prefix.push(value);
         self
     }
 

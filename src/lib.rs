@@ -248,11 +248,7 @@ impl HistogramWithSum {
         if let Err(e) = self.histogram.record(v) {
             error!("failed to add value to histogram: {:?}", e);
         }
-        if v >= ::std::u64::MAX - self.sum {
-            self.sum = ::std::u64::MAX
-        } else {
-            self.sum += v;
-        }
+        self.sum = self.sum.saturating_add(v);
     }
 
     pub fn histogram(&self) -> &Histogram<u64> {
